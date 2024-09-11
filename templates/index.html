@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .task-list {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Task Manager</h1>
+
+        <div class="form-group">
+            <label for="title">Task Title:</label>
+            <input type="text" id="title" class="form-control" placeholder="Enter task title">
+        </div>
+
+        <div class="form-group">
+            <label for="priority">Priority:</label>
+            <input type="text" id="priority" class="form-control" placeholder="Enter task priority">
+        </div>
+
+        <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+
+        <div class="task-list">
+            <h2>Current Tasks</h2>
+            <ul id="task-list" class="list-group"></ul>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = "http://127.0.0.1:8000/tasks";  // Adjust if your API URL is different
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTasks();
+        });
+
+        function fetchTasks() {
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Fetched data:', data);  // Отладка данных
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            data.forEach(task => {
+                // Пример предполагаемых данных: [id, title, priority, done]
+                const [id, title, priority, done] = task;
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.innerHTML = `
+                    <div>
+                        <strong>${title || 'No Title'}</strong> - ${priority || 'No Priority'} - ${done ? 'Done' : 'Not Done'}
+                        <button class="btn btn-warning btn-sm float-right ml-2" onclick="updateTask(${id})">Update</button>
+                        <button class="btn btn-danger btn-sm float-right" onclick="deleteTask(${id})">Delete</button>
+                    </div>
+                `;
+                taskList.appendChild(li);
+            });
+        })
+        .catch(error => console.error('Error fetching tasks:', error));
+        }
+
+
+
+        function addTask() {
+            const title = document.getElementById('title').value;
+            const priority = document.getElementById('priority').value;
+
+            if (!title || !priority) {
+                alert('Title and priority are required!');
+                return;
+            }
+
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, priority }),
+            })
+            .then(response => response.json())
+            .then(() => {
+                document.getElementById('title').value = '';
+                document.getElementById('priority').value = '';
+                fetchTasks();
+            });
+        }
+
+            function updateTask(id) {
+        const done = confirm("Mark task as done?");
+
+        fetch(`${apiUrl}/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ done }),
+        })
+        .then(response => response.json())
+        .then(() => fetchTasks());
+    }
+
+
+        function deleteTask(id) {
+            fetch(`${apiUrl}/${id}`, {
+                method: 'DELETE',
+            })
+            .then(() => fetchTasks());
+        }
+    </script>
+</body>
+</html>
